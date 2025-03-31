@@ -87,12 +87,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleanup stale clients - run every minute
   setInterval(() => {
     const now = Date.now();
-    for (const [userId, client] of clients.entries()) {
+    // Use Array.from to avoid the downlevelIteration flag requirement
+    Array.from(clients.entries()).forEach(([userId, client]) => {
       // Remove clients that haven't polled in 5 minutes
       if (now - client.lastPoll > 5 * 60 * 1000) {
         clients.delete(userId);
       }
-    }
+    });
   }, 60 * 1000);
   
   // Get or create a client state

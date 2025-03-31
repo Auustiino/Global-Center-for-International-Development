@@ -24,7 +24,8 @@ export class AgoraClient {
   private onError: ((error: Error) => void) | null = null;
 
   constructor() {
-    this.appId = process.env.AGORA_APP_ID || "";
+    // Using import.meta.env instead of process.env for browser compatibility
+    this.appId = import.meta.env.VITE_AGORA_APP_ID || "";
     this.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
     this.setupEventListeners();
   }
@@ -94,7 +95,11 @@ export class AgoraClient {
       this.appId = tokenData.appId;
       this.token = tokenData.token;
 
-      // Join the channel
+      // Join the channel - ensure appId is not null
+      if (!this.appId || !this.token) {
+        throw new Error("Missing Agora App ID or token");
+      }
+
       await this.client?.join(this.appId, channelName, this.token, uid);
 
       // Create and publish local tracks
@@ -136,13 +141,45 @@ export class AgoraClient {
 
   public async switchCamera() {
     if (this.localVideoTrack) {
-      await (this.localVideoTrack as ICameraVideoTrack).switchDevice();
+      try {
+        // Close the current video track
+        this.localVideoTrack.close();
+        
+        // Create a new video track with a different device
+        this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+        
+        // Publish the new track
+        if (this.client) {
+          await this.client.publish(this.localVideoTrack);
+        }
+      } catch (error) {
+        console.error("Failed to switch camera", error);
+        if (this.onError) {
+          this.onError(error as Error);
+        }
+      }
     }
   }
 
   public async switchMicrophone() {
     if (this.localAudioTrack) {
-      await (this.localAudioTrack as IMicrophoneAudioTrack).switchDevice();
+      try {
+        // Close the current audio track
+        this.localAudioTrack.close();
+        
+        // Create a new audio track with a different device
+        this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        
+        // Publish the new track
+        if (this.client) {
+          await this.client.publish(this.localAudioTrack);
+        }
+      } catch (error) {
+        console.error("Failed to switch microphone", error);
+        if (this.onError) {
+          this.onError(error as Error);
+        }
+      }
     }
   }
 
