@@ -44,7 +44,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
   const [, setLocation] = useLocation();
-  const { register, login, isAuthenticated } = useAuth();
+  const { register, login, isAuthenticated, enableDevMode } = useAuth();
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -116,7 +116,7 @@ const Signup = () => {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -260,6 +260,20 @@ const Signup = () => {
                 {isLoggingIn ? "Logging in..." : "Log in"}
               </Button>
             </p>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs text-slate-500"
+              onClick={() => {
+                enableDevMode();
+                setLocation("/");
+              }}
+            >
+              Enable Developer Mode
+            </Button>
           </div>
         </CardContent>
       </Card>

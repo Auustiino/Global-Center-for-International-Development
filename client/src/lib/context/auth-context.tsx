@@ -10,6 +10,8 @@ interface AuthContextData {
   login: (username: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
+  enableDevMode: () => void;
+  isDevMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDevMode, setIsDevMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setIsDevMode(false);
     localStorage.removeItem("user");
     toast({
       title: "Logged out",
@@ -91,15 +95,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const enableDevMode = () => {
+    // Create a mock user for development testing
+    const mockUser: User = {
+      id: 999,
+      username: "developer",
+      email: "dev@example.com",
+      password: "", // Password is omitted for security
+      displayName: "Developer Mode", // This is declared as text() in the schema, which can be null
+      bio: "This is a developer account for testing",
+      profilePicture: null,
+      nativeLanguage: "en",
+      createdAt: new Date(),
+    };
+    
+    setUser(mockUser);
+    setIsDevMode(true);
+    toast({
+      title: "Developer Mode Enabled",
+      description: "You can now navigate through the app without authentication",
+      variant: "default",
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user || isDevMode,
         isLoading,
         login,
         register,
         logout,
+        enableDevMode,
+        isDevMode,
       }}
     >
       {children}
