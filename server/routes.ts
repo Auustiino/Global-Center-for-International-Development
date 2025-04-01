@@ -1,8 +1,14 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import fs from "fs";
+
+// Fix for ESM environment where __dirname is not available
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { storage } from "./storage";
 import { 
   insertUserSchema, updateUserSchema, 
@@ -14,10 +20,10 @@ import * as ws from "ws";
 import axios from "axios";
 
 // Configure multer for file uploads
-const upload = multer({
+const imageUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadDir = path.join(__dirname, "../uploads");
+      const uploadDir = path.join(__dirname, "../uploads/images");
       // Create directory if it doesn't exist
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -37,6 +43,34 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error("Only image files are allowed"));
+    }
+  },
+});
+
+// Configure multer for audio uploads
+const audioUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.join(__dirname, "../uploads/audio");
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname) || '.wav'; // Default to .wav if no extension
+      cb(null, `${uniqueSuffix}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept audio files
+    if (file.mimetype.startsWith("audio/") || file.originalname.endsWith('.wav') || file.originalname.endsWith('.mp3')) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only audio files are allowed"));
     }
   },
 });
@@ -79,6 +113,9 @@ const authenticate = async (req: Request, res: Response, next: Function) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
   // WebSocket direct API route for message passing
   // We'll use a REST API endpoint instead of WebSockets to avoid conflicts with Vite
@@ -193,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.patch("/api/users/:id", authenticate, upload.single("profilePicture"), async (req, res) => {
+  app.patch("/api/users/:id", authenticate, imageUpload.single("profilePicture"), async (req, res) => {
     try {
       const id = Number(req.params.id);
       
@@ -211,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle file upload
       let userData = req.body;
       if (req.file) {
-        userData.profilePicture = `/uploads/${req.file.filename}`;
+        userData.profilePicture = `/uploads/images/${req.file.filename}`;
       }
       
       // Parse and validate
@@ -498,6 +535,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Transcription retrieval error:", error);
       return res.status(500).json({ message: "Transcription retrieval error" });
+    }
+  });
+
+  // Audio upload endpoint for speech recognition
+  app.post("/api/upload-audio", authenticate, audioUpload.single("audio"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No audio file uploaded" });
+      }
+      
+      // Create a URL for the uploaded file
+      const hostname = req.headers.host;
+      const protocol = req.protocol;
+      const audioUrl = `${protocol}://${hostname}/uploads/audio/${req.file.filename}`;
+      
+      return res.status(201).json({ audioUrl });
+    } catch (error) {
+      console.error("Audio upload error:", error);
+      return res.status(500).json({ message: "Failed to upload audio" });
     }
   });
 

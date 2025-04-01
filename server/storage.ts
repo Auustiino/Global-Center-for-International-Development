@@ -4,6 +4,8 @@ import {
   UserLanguage, InsertUserLanguage, UpdateUserLanguage,
   Call, InsertCall, UserResponse, CallResponse
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, or, desc } from "drizzle-orm";
 
 // Define the storage interface
 export interface IStorage {
@@ -29,91 +31,44 @@ export interface IStorage {
   updateCall(id: number, endTime: Date, duration: number): Promise<Call | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private userLanguages: Map<number, UserLanguage>;
-  private calls: Map<number, Call>;
-  private currentUserId: number;
-  private currentUserLanguageId: number;
-  private currentCallId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.userLanguages = new Map();
-    this.calls = new Map();
-    this.currentUserId = 1;
-    this.currentUserLanguageId = 1;
-    this.currentCallId = 1;
-
-    // Add sample user for testing
-    this.createUser({
-      username: "johndoe",
-      password: "password123",
-      displayName: "John Doe",
-      email: "john@example.com",
-      bio: "Language enthusiast and software developer",
-      profilePicture: null,
-      nativeLanguage: "en"
-    });
-
-    // Add sample user languages
-    this.addUserLanguage({
-      userId: 1,
-      language: "es",
-      proficiency: "basic"
-    });
-
-    this.addUserLanguage({
-      userId: 1,
-      language: "fr",
-      proficiency: "beginner"
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const now = new Date();
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: now
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async updateUser(id: number, userData: UpdateUser): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-
-    const updatedUser = { ...user, ...userData };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    return this.users.delete(id);
+    const result = await db.delete(users).where(eq(users.id, id));
+    return !!result; // Convert to boolean
   }
 
   async getUserWithLanguages(id: number): Promise<UserResponse | undefined> {
-    const user = this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     if (!user) return undefined;
 
     const languages = await this.getUserLanguages(id);
@@ -127,40 +82,39 @@ export class MemStorage implements IStorage {
 
   // UserLanguage operations
   async getUserLanguages(userId: number): Promise<UserLanguage[]> {
-    return Array.from(this.userLanguages.values()).filter(
-      (language) => language.userId === userId
-    );
+    return db.select().from(userLanguages).where(eq(userLanguages.userId, userId));
   }
 
   async addUserLanguage(insertLanguage: InsertUserLanguage): Promise<UserLanguage> {
-    const id = this.currentUserLanguageId++;
-    const language: UserLanguage = { ...insertLanguage, id };
-    this.userLanguages.set(id, language);
+    const [language] = await db.insert(userLanguages).values(insertLanguage).returning();
     return language;
   }
 
   async updateUserLanguage(id: number, languageData: UpdateUserLanguage): Promise<UserLanguage | undefined> {
-    const language = this.userLanguages.get(id);
-    if (!language) return undefined;
-
-    const updatedLanguage = { ...language, ...languageData };
-    this.userLanguages.set(id, updatedLanguage);
+    const [updatedLanguage] = await db
+      .update(userLanguages)
+      .set(languageData)
+      .where(eq(userLanguages.id, id))
+      .returning();
     return updatedLanguage;
   }
 
   async deleteUserLanguage(id: number): Promise<boolean> {
-    return this.userLanguages.delete(id);
+    const result = await db.delete(userLanguages).where(eq(userLanguages.id, id));
+    return !!result; // Convert to boolean
   }
 
   // Call operations
   async getCalls(userId: number): Promise<CallResponse[]> {
-    const userCalls = Array.from(this.calls.values()).filter(
-      (call) => call.initiatorId === userId || call.receiverId === userId
-    );
+    const userCalls = await db
+      .select()
+      .from(calls)
+      .where(or(eq(calls.initiatorId, userId), eq(calls.receiverId, userId)))
+      .orderBy(desc(calls.startTime));
 
     return Promise.all(userCalls.map(async (call) => {
-      const initiator = await this.getUser(call.initiatorId);
-      const receiver = await this.getUser(call.receiverId);
+      const [initiator] = await db.select().from(users).where(eq(users.id, call.initiatorId));
+      const [receiver] = await db.select().from(users).where(eq(users.id, call.receiverId));
 
       return {
         ...call,
@@ -191,34 +145,23 @@ export class MemStorage implements IStorage {
   }
 
   async getCallById(id: number): Promise<Call | undefined> {
-    return this.calls.get(id);
+    const [call] = await db.select().from(calls).where(eq(calls.id, id));
+    return call;
   }
 
   async createCall(insertCall: InsertCall): Promise<Call> {
-    const id = this.currentCallId++;
-    const call: Call = { 
-      ...insertCall, 
-      id, 
-      startTime: new Date(),
-      endTime: null,
-      duration: null
-    };
-    this.calls.set(id, call);
+    const [call] = await db.insert(calls).values(insertCall).returning();
     return call;
   }
 
   async updateCall(id: number, endTime: Date, duration: number): Promise<Call | undefined> {
-    const call = this.calls.get(id);
-    if (!call) return undefined;
-
-    const updatedCall = { 
-      ...call, 
-      endTime,
-      duration 
-    };
-    this.calls.set(id, updatedCall);
+    const [updatedCall] = await db
+      .update(calls)
+      .set({ endTime, duration })
+      .where(eq(calls.id, id))
+      .returning();
     return updatedCall;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

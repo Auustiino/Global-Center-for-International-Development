@@ -33,11 +33,24 @@ export const translateText = async (text: string, targetLang: string) => {
 // AssemblyAI speech-to-text service
 export const transcribeAudio = async (audioBlob: Blob) => {
   try {
-    // First upload audio to temporary storage (in a real app)
-    // Here we would upload to S3 or similar, but for demo we'll mock it
-    const audioUrl = "https://example.com/mock-audio-url.wav";
+    // Create a form data object to upload the audio
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+    
+    // First upload the audio file
+    const uploadResponse = await fetch('/api/upload-audio', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload audio');
+    }
+    
+    const { audioUrl } = await uploadResponse.json();
 
-    // Start transcription
+    // Start transcription with the real audio URL
     const response = await apiRequest("POST", "/api/speech-to-text", {
       audioUrl,
     });

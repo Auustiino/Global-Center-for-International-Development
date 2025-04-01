@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User table
 export const users = pgTable("users", {
@@ -18,7 +19,7 @@ export const users = pgTable("users", {
 // Languages that users are learning
 export const userLanguages = pgTable("user_languages", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   language: text("language").notNull(),
   proficiency: text("proficiency").notNull(), // beginner, basic, intermediate, advanced, fluent
 });
@@ -26,8 +27,8 @@ export const userLanguages = pgTable("user_languages", {
 // Call history records
 export const calls = pgTable("calls", {
   id: serial("id").primaryKey(),
-  initiatorId: integer("initiator_id").notNull(),
-  receiverId: integer("receiver_id").notNull(),
+  initiatorId: integer("initiator_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   startTime: timestamp("start_time").defaultNow().notNull(),
   endTime: timestamp("end_time"),
   initiatorLanguage: text("initiator_language").notNull(), 
@@ -120,3 +121,30 @@ export const PROFICIENCY_OPTIONS = [
   { value: "advanced", label: "Advanced" },
   { value: "fluent", label: "Fluent" },
 ];
+
+// Define relations between tables
+export const usersRelations = relations(users, ({ many }) => ({
+  languages: many(userLanguages),
+  initiatedCalls: many(calls, { relationName: "initiator" }),
+  receivedCalls: many(calls, { relationName: "receiver" }),
+}));
+
+export const userLanguagesRelations = relations(userLanguages, ({ one }) => ({
+  user: one(users, {
+    fields: [userLanguages.userId],
+    references: [users.id],
+  }),
+}));
+
+export const callsRelations = relations(calls, ({ one }) => ({
+  initiator: one(users, {
+    fields: [calls.initiatorId],
+    references: [users.id],
+    relationName: "initiator",
+  }),
+  receiver: one(users, {
+    fields: [calls.receiverId],
+    references: [users.id],
+    relationName: "receiver",
+  }),
+}));
