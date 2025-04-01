@@ -3,22 +3,6 @@ import { User } from "@shared/schema";
 import { apiRequest } from "../queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock user for development testing
-const MOCK_USER: Partial<User> = {
-  id: 999,
-  username: "developer",
-  email: "dev@example.com",
-  displayName: "Developer Mode",
-  bio: "This is a developer account for testing",
-  profilePicture: null,
-  nativeLanguage: "en",
-  twitterUrl: "https://twitter.com/dev",
-  githubUrl: "https://github.com/dev",
-  facebookUrl: null,
-  instagramUrl: null,
-  linkedinUrl: null,
-};
-
 interface AuthContextData {
   user: User | null;
   isAuthenticated: boolean;
@@ -26,7 +10,7 @@ interface AuthContextData {
   login: (username: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => void;
-  enableDevMode: () => void;
+  enableDevMode: () => Promise<void>;
   isDevMode: boolean;
 }
 
@@ -38,7 +22,7 @@ const AuthContext = createContext<AuthContextData>({
   login: async () => {},
   register: async () => {},
   logout: () => {},
-  enableDevMode: () => {},
+  enableDevMode: async () => {},
   isDevMode: false,
 });
 
@@ -54,9 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const devModeEnabled = localStorage.getItem("devMode") === "true";
     
     if (devModeEnabled) {
-      // If dev mode was enabled, use the mock user
-      setIsDevMode(true);
-      setUser(MOCK_USER as User);
+      // If dev mode was enabled, login as developer
+      loginAsDeveloper().catch(() => {
+        // If developer login fails, clear dev mode flag
+        localStorage.removeItem("devMode");
+        setIsDevMode(false);
+      });
     } else {
       // Otherwise try to load the saved user
       const savedUser = localStorage.getItem("user");
@@ -68,15 +55,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem("user");
         }
       }
+      
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }, []);
 
   // Save dev mode state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("devMode", isDevMode.toString());
   }, [isDevMode]);
+
+  const loginAsDeveloper = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest("POST", "/api/auth/login", { 
+        username: "developer", 
+        password: "password123" 
+      });
+      const userData = await response.json();
+      setUser(userData);
+      setIsDevMode(true);
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("devMode", "true");
+      setIsLoading(false);
+      return userData;
+    } catch (error) {
+      console.error("Developer login failed:", error);
+      setIsLoading(false);
+      setIsDevMode(false);
+      localStorage.removeItem("devMode");
+      throw error;
+    }
+  };
 
   const login = async (username: string, password: string) => {
     try {
@@ -138,16 +148,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const enableDevMode = () => {
-    setUser(MOCK_USER as User);
-    setIsDevMode(true);
-    localStorage.setItem("devMode", "true");
-    localStorage.setItem("user", JSON.stringify(MOCK_USER));
-    toast({
-      title: "Developer Mode Enabled",
-      description: "You are now signed in as a developer user",
-      variant: "default",
-    });
+  const enableDevMode = async () => {
+    try {
+      const userData = await loginAsDeveloper();
+      toast({
+        title: "Developer Mode Enabled",
+        description: "You are now signed in as a developer user",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Developer Mode Failed",
+        description: "Could not enable developer mode",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

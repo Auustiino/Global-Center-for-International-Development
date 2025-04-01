@@ -9,27 +9,19 @@ import Profile from "@/pages/profile";
 import VideoCall from "@/pages/video-call";
 import { useAuth } from "./lib/context/auth-context";
 import { useEffect } from "react";
+import NavBar from "@/components/nav-bar";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, isDevMode, enableDevMode } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
-  
-  // Check URL for dev mode parameter
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const devMode = url.searchParams.get('devMode');
-    if (devMode === 'true' && !isDevMode) {
-      enableDevMode();
-    }
-  }, [enableDevMode, isDevMode]);
 
   useEffect(() => {
-    if (!isAuthenticated && !isDevMode) {
+    if (!isAuthenticated) {
       setLocation("/signup");
     }
-  }, [isAuthenticated, isDevMode, setLocation]);
+  }, [isAuthenticated, setLocation]);
 
-  if (!isAuthenticated && !isDevMode) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -61,7 +53,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <div className="flex flex-col min-h-screen">
+        <NavBar />
+        <main className="flex-1">
+          <Router />
+        </main>
+      </div>
       <Toaster />
     </QueryClientProvider>
   );

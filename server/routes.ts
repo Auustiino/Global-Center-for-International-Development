@@ -271,6 +271,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
       
+      // Special case for developer mode
+      if (username === "developer" && password === "password123") {
+        const devUser = {
+          id: 999,
+          username: "developer",
+          email: "dev@example.com",
+          displayName: "Developer Mode",
+          bio: "This is a developer account for testing",
+          profilePicture: null,
+          nativeLanguage: "en",
+          createdAt: new Date(),
+          twitterUrl: "https://twitter.com/dev",
+          githubUrl: "https://github.com/dev",
+          facebookUrl: null,
+          instagramUrl: null,
+          linkedinUrl: null
+        };
+        return res.json(devUser);
+      }
+      
       const user = await storage.getUserByUsername(username);
       
       if (!user || user.password !== password) {

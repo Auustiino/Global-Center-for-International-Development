@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/context/auth-context";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,15 @@ const NavBar = () => {
   const { user, logout, isAuthenticated, enableDevMode, isDevMode } = useAuth();
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Check URL for dev mode parameter
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const devMode = url.searchParams.get('devMode');
+    if (devMode === 'true' && !isDevMode) {
+      enableDevMode();
+    }
+  }, [enableDevMode, isDevMode]);
 
   const handleLogout = () => {
     logout();
