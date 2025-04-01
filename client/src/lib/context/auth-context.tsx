@@ -116,22 +116,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mockUser = {
       id: 999,
       username: "developer",
-      password: "password123", // Not used in frontend, but required in the type
       email: "dev@example.com",
       displayName: "Developer Mode",
       bio: "This is a developer account for testing",
       profilePicture: null,
       nativeLanguage: "en",
-      twitterUrl: null,
-      facebookUrl: null,
-      instagramUrl: null,
-      linkedinUrl: null,
-      githubUrl: null,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
+      twitterUrl: "https://twitter.com/dev",
+      githubUrl: "https://github.com/dev",
     };
-    
+
     setUser(mockUser);
     setIsDevMode(true);
+    localStorage.setItem("devMode", "true");
     localStorage.setItem("user", JSON.stringify(mockUser));
     toast({
       title: "Developer Mode Enabled",
