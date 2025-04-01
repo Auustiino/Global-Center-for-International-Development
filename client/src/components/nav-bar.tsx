@@ -16,11 +16,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Menu, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, LogOut, User as UserIcon, Code } from "lucide-react";
 
 const NavBar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, enableDevMode, isDevMode } = useAuth();
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -59,15 +60,15 @@ const NavBar = () => {
               <div className="ml-10 flex items-baseline space-x-4">
                 {navItems.map((item) => (
                   <Link key={item.path} href={item.path}>
-                    <a
+                    <span
                       className={`${
                         location === item.path
                           ? "bg-slate-800"
                           : "text-gray-300 hover:bg-slate-800 hover:text-white"
-                      } px-3 py-2 rounded-md text-sm font-medium`}
+                      } px-3 py-2 rounded-md text-sm font-medium cursor-pointer`}
                     >
                       {item.name}
-                    </a>
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -96,6 +97,15 @@ const NavBar = () => {
                       <UserIcon className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={enableDevMode} className="relative">
+                      <Code className="mr-2 h-4 w-4" />
+                      <span>Developer Mode</span>
+                      {isDevMode && (
+                        <span className="absolute right-2 h-2 w-2 rounded-full bg-green-500"></span>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>
@@ -130,24 +140,36 @@ const NavBar = () => {
                 <div className="mt-6 flex flex-col space-y-4">
                   {navItems.map((item) => (
                     <Link key={item.path} href={item.path}>
-                      <a
-                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                      <span
+                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
                         onClick={() => setIsOpen(false)}
                       >
                         {item.name}
-                      </a>
+                      </span>
                     </Link>
                   ))}
                   {isAuthenticated ? (
                     <>
                       <Link href="/profile">
-                        <a
-                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                        <span
+                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
                           onClick={() => setIsOpen(false)}
                         >
                           Profile
-                        </a>
+                        </span>
                       </Link>
+                      <div className="border-t border-gray-200 my-2 pt-2">
+                        <button
+                          onClick={enableDevMode}
+                          className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                        >
+                          <Code className="h-4 w-4 mr-2 text-slate-600" />
+                          <span>Developer Mode</span>
+                          {isDevMode && (
+                            <span className="ml-2 h-2 w-2 rounded-full bg-green-500"></span>
+                          )}
+                        </button>
+                      </div>
                       <Button onClick={handleLogout} variant="destructive" className="mt-4">
                         Logout
                       </Button>

@@ -124,17 +124,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       twitterUrl: "https://twitter.com/dev",
       githubUrl: "https://github.com/dev",
+      facebookUrl: null,
+      instagramUrl: null,
+      linkedinUrl: null,
+      password: ""
     };
 
-    setUser(mockUser);
-    setIsDevMode(true);
-    localStorage.setItem("devMode", "true");
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    toast({
-      title: "Developer Mode Enabled",
-      description: "You can now navigate through the app without authentication",
-      variant: "default",
-    });
+    // Toggle dev mode if already enabled
+    if (isDevMode) {
+      toast({
+        title: "Developer Mode Setting Updated",
+        description: "Your developer preferences have been updated",
+        variant: "default",
+      });
+    } else {
+      setUser(mockUser as any);
+      setIsDevMode(true);
+      localStorage.setItem("devMode", "true");
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      toast({
+        title: "Developer Mode Enabled",
+        description: "You can now navigate through the app without authentication",
+        variant: "default",
+      });
+    }
   };
 
   return (

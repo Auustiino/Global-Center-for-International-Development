@@ -11,8 +11,17 @@ import { useAuth } from "./lib/context/auth-context";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated, isDevMode } = useAuth();
+  const { isAuthenticated, isDevMode, enableDevMode } = useAuth();
   const [location, setLocation] = useLocation();
+  
+  // Check URL for dev mode parameter
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const devMode = url.searchParams.get('devMode');
+    if (devMode === 'true' && !isDevMode) {
+      enableDevMode();
+    }
+  }, [enableDevMode, isDevMode]);
 
   useEffect(() => {
     if (!isAuthenticated && !isDevMode) {
