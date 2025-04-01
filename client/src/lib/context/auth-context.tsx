@@ -150,20 +150,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enableDevMode = async () => {
     try {
-      // First try to login as developer
+      const devUser = {
+        username: "developer",
+        password: "password123",
+        email: "dev@example.com",
+        displayName: "Developer Mode",
+        nativeLanguage: "en",
+        bio: "This is a developer account for testing"
+      };
+
+      setIsLoading(true);
+      // First try to login
       try {
         await login("developer", "password123");
       } catch (error) {
-        // If login fails, register the developer account
-        await register({
-          username: "developer",
-          password: "password123",
-          email: "dev@example.com",
-          displayName: "Developer Mode",
-          nativeLanguage: "en",
-          bio: "This is a developer account for testing"
-        });
-        // Then login with the newly created account
+        // If login fails, try to register
+        await register(devUser);
         await login("developer", "password123");
       }
       
