@@ -29,7 +29,9 @@ const AuthContext = createContext<AuthContextData>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDevMode, setIsDevMode] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(() => {
+    return localStorage.getItem("devMode") === "true";
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,6 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("devMode", isDevMode.toString());
+  }, [isDevMode]);
 
   const login = async (username: string, password: string) => {
     try {
