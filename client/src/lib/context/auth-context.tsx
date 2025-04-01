@@ -150,7 +150,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enableDevMode = async () => {
     try {
-      const userData = await loginAsDeveloper();
+      // First try to login as developer
+      try {
+        await login("developer", "password123");
+      } catch (error) {
+        // If login fails, register the developer account
+        await register({
+          username: "developer",
+          password: "password123",
+          email: "dev@example.com",
+          displayName: "Developer Mode",
+          nativeLanguage: "en",
+          bio: "This is a developer account for testing"
+        });
+        // Then login with the newly created account
+        await login("developer", "password123");
+      }
+      
+      setIsDevMode(true);
+      localStorage.setItem("devMode", "true");
       toast({
         title: "Developer Mode Enabled",
         description: "You are now signed in as a developer user",
@@ -158,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error) {
       toast({
-        title: "Developer Mode Failed",
+        title: "Developer Mode Failed", 
         description: "Could not enable developer mode",
         variant: "destructive",
       });
