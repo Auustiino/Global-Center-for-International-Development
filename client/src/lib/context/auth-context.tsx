@@ -107,20 +107,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enableDevMode = () => {
     // Create a mock user for development testing
-    const mockUser: User = {
+    const mockUser = {
       id: 999,
       username: "developer",
       email: "dev@example.com",
-      password: "", // Password is omitted for security
-      displayName: "Developer Mode", // This is declared as text() in the schema, which can be null
+      displayName: "Developer Mode",
       bio: "This is a developer account for testing",
       profilePicture: null,
       nativeLanguage: "en",
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
     
     setUser(mockUser);
     setIsDevMode(true);
+    localStorage.setItem("user", JSON.stringify(mockUser));
     toast({
       title: "Developer Mode Enabled",
       description: "You can now navigate through the app without authentication",
