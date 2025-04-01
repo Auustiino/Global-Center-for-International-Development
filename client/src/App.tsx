@@ -50,11 +50,26 @@ function Router() {
   );
 }
 
+function WelcomeBar() {
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) return null;
+  
+  return (
+    <div className="bg-slate-100 py-3 px-4 text-center border-b border-slate-200 shadow-sm">
+      <p className="text-slate-800">
+        Welcome to the <span className="font-bold">Global Center of International Understanding</span>, <span className="font-semibold">{user?.displayName || user?.username}</span>
+      </p>
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex flex-col min-h-screen">
         <NavBar />
+        <WelcomeBar />
         <main className="flex-1">
           <Router />
         </main>

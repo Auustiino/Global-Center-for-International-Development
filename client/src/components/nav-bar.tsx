@@ -70,7 +70,7 @@ const NavBar = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link href="/">
-                <div className="text-xl font-bold cursor-pointer">LinguaConnect</div>
+                <div className="text-xl font-bold cursor-pointer">GCID</div>
               </Link>
             </div>
             <div className="hidden md:block">
@@ -168,9 +168,9 @@ const NavBar = () => {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle>LinguaConnect</SheetTitle>
+                  <SheetTitle>GCID</SheetTitle>
                   <SheetDescription>
-                    Connect with anyone around the world
+                    Global Center of International Understanding
                   </SheetDescription>
                 </SheetHeader>
                 <div className="mt-6 flex flex-col space-y-4">
