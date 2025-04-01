@@ -35,6 +35,12 @@ function Router() {
       <Route path="/profile">
         {(params) => <ProtectedRoute component={Profile} />}
       </Route>
+      <Route path="/profile/edit">
+        {(params) => <ProtectedRoute component={Profile} edit={true} />}
+      </Route>
+      <Route path="/user/:userId">
+        {(params) => <ProtectedRoute component={Profile} params={params} />}
+      </Route>
       <Route path="/call/:userId?">
         {(params) => <ProtectedRoute component={VideoCall} params={params} />}
       </Route>

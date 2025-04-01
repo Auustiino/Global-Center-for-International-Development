@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import ProfilePicture from "./profile-picture";
 import UserLanguageList from "../user-language-list";
+import { SocialMediaLinksEdit } from "./social-media-links";
 
 // Extend the schema for the form validation
 const profileFormSchema = updateUserSchema
@@ -61,6 +62,11 @@ const ProfileForm = () => {
       email: user?.email || "",
       bio: user?.bio || "",
       nativeLanguage: user?.nativeLanguage || "en",
+      twitterUrl: user?.twitterUrl || "",
+      facebookUrl: user?.facebookUrl || "",
+      instagramUrl: user?.instagramUrl || "",
+      linkedinUrl: user?.linkedinUrl || "",
+      githubUrl: user?.githubUrl || "",
       password: "",
       confirmPassword: "",
     },
@@ -166,7 +172,7 @@ const ProfileForm = () => {
                   <FormItem>
                     <FormLabel>Display Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -180,7 +186,7 @@ const ProfileForm = () => {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input type="email" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -194,7 +200,7 @@ const ProfileForm = () => {
                   <FormItem>
                     <FormLabel>Bio</FormLabel>
                     <FormControl>
-                      <Textarea rows={4} {...field} />
+                      <Textarea rows={4} {...field} value={field.value || ""} />
                     </FormControl>
                     <FormDescription>
                       Tell others about yourself and your language learning goals.
@@ -237,6 +243,10 @@ const ProfileForm = () => {
                   Languages I'm Learning
                 </h3>
                 <UserLanguageList userId={user.id} />
+              </div>
+              
+              <div className="pt-4">
+                <SocialMediaLinksEdit form={form} />
               </div>
 
               <div className="space-y-4 pt-4">
