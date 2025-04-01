@@ -53,7 +53,14 @@ const NavBar = () => {
     { name: "Calls", path: "/calls" },
     { name: "History", path: "/history" },
     { name: "Settings", path: "/settings" },
-    { name: "Developer Mode", onClick: enableDevMode, showDot: isDevMode },
+    { 
+      name: "Developer Mode", 
+      onClick: () => {
+        enableDevMode();
+        setLocation("/");
+      }, 
+      showDot: isDevMode 
+    },
   ];
 
   return (
@@ -121,7 +128,13 @@ const NavBar = () => {
                       <span>Profile</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={enableDevMode} className="relative">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        enableDevMode();
+                        setLocation("/");
+                      }} 
+                      className="relative"
+                    >
                       <Code className="mr-2 h-4 w-4" />
                       <span>Developer Mode</span>
                       {isDevMode && (
@@ -162,14 +175,30 @@ const NavBar = () => {
                 </SheetHeader>
                 <div className="mt-6 flex flex-col space-y-4">
                   {navItems.map((item) => (
-                    <Link key={item.path} href={item.path}>
-                      <span
-                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
-                        onClick={() => setIsOpen(false)}
+                    item.path ? (
+                      <Link key={item.name} href={item.path || "/"}>
+                        <span
+                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {item.name}
+                        </span>
+                      </Link>
+                    ) : (
+                      <button
+                        key={item.name}
+                        className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          item.onClick?.();
+                          setIsOpen(false);
+                        }}
                       >
                         {item.name}
-                      </span>
-                    </Link>
+                        {item.showDot && (
+                          <span className="ml-2 inline-block h-2 w-2 rounded-full bg-green-500"></span>
+                        )}
+                      </button>
+                    )
                   ))}
                   {isAuthenticated ? (
                     <>
@@ -183,7 +212,11 @@ const NavBar = () => {
                       </Link>
                       <div className="border-t border-gray-200 my-2 pt-2">
                         <button
-                          onClick={enableDevMode}
+                          onClick={() => {
+                            enableDevMode();
+                            setLocation("/");
+                            setIsOpen(false);
+                          }}
                           className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
                         >
                           <Code className="h-4 w-4 mr-2 text-slate-600" />
