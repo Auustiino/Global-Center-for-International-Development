@@ -175,3 +175,128 @@ export const deleteUserLanguage = async (languageId: number) => {
     throw error;
   }
 };
+
+// Scheduled calls services
+export const getUserScheduledCalls = async (userId: number) => {
+  try {
+    const response = await fetch(`/api/users/${userId}/scheduled-calls`, {
+      credentials: "include",
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch scheduled calls");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Scheduled calls fetch error:", error);
+    throw error;
+  }
+};
+
+export const getScheduledCallsByDate = async (userId: number, date: Date) => {
+  try {
+    // Format date as YYYY-MM-DD
+    const formattedDate = date.toISOString().split('T')[0];
+    const response = await fetch(`/api/users/${userId}/scheduled-calls/date/${formattedDate}`, {
+      credentials: "include",
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch scheduled calls for date");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Scheduled calls by date fetch error:", error);
+    throw error;
+  }
+};
+
+export const createScheduledCall = async (
+  initiatorId: number, 
+  receiverId: number, 
+  startTime: Date, 
+  durationMinutes: number,
+  title: string,
+  notes: string | null = null
+) => {
+  try {
+    const response = await apiRequest("POST", "/api/scheduled-calls", {
+      initiatorId,
+      receiverId,
+      startTime: startTime.toISOString(),
+      durationMinutes,
+      title,
+      notes
+    });
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Create scheduled call error:", error);
+    throw error;
+  }
+};
+
+export const getScheduledCall = async (callId: number) => {
+  try {
+    const response = await fetch(`/api/scheduled-calls/${callId}`, {
+      credentials: "include",
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch scheduled call");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Scheduled call fetch error:", error);
+    throw error;
+  }
+};
+
+export const updateScheduledCall = async (
+  callId: number, 
+  updateData: {
+    startTime?: Date;
+    durationMinutes?: number;
+    title?: string;
+    notes?: string | null;
+  }
+) => {
+  try {
+    // Create a new object for API data with transformed values
+    const apiData: {
+      startTime?: string;
+      durationMinutes?: number;
+      title?: string;
+      notes?: string | null;
+    } = {
+      // Only copy non-Date properties directly
+      durationMinutes: updateData.durationMinutes,
+      title: updateData.title,
+      notes: updateData.notes
+    };
+    
+    // Convert Date to ISO string
+    if (updateData.startTime) {
+      apiData.startTime = updateData.startTime.toISOString();
+    }
+    
+    const response = await apiRequest("PATCH", `/api/scheduled-calls/${callId}`, apiData);
+    return await response.json();
+  } catch (error) {
+    console.error("Update scheduled call error:", error);
+    throw error;
+  }
+};
+
+export const deleteScheduledCall = async (callId: number) => {
+  try {
+    await apiRequest("DELETE", `/api/scheduled-calls/${callId}`);
+    return true;
+  } catch (error) {
+    console.error("Delete scheduled call error:", error);
+    throw error;
+  }
+};

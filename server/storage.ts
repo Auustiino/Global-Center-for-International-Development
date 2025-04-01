@@ -1,11 +1,12 @@
 import { 
-  users, calls, userLanguages, 
+  users, calls, userLanguages, scheduledCalls,
   User, InsertUser, UpdateUser, 
   UserLanguage, InsertUserLanguage, UpdateUserLanguage,
-  Call, InsertCall, UserResponse, CallResponse
+  Call, InsertCall, UserResponse, CallResponse,
+  ScheduledCall, InsertScheduledCall, UpdateScheduledCall, ScheduledCallResponse
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, desc } from "drizzle-orm";
+import { eq, or, desc, and, gte, lte } from "drizzle-orm";
 
 // Define the storage interface
 export interface IStorage {
@@ -29,6 +30,14 @@ export interface IStorage {
   getCallById(id: number): Promise<Call | undefined>;
   createCall(call: InsertCall): Promise<Call>;
   updateCall(id: number, endTime: Date, duration: number): Promise<Call | undefined>;
+  
+  // Scheduled call operations
+  getScheduledCalls(userId: number): Promise<ScheduledCallResponse[]>;
+  getScheduledCallById(id: number): Promise<ScheduledCall | undefined>;
+  getScheduledCallsByDate(userId: number, date: Date): Promise<ScheduledCallResponse[]>;
+  createScheduledCall(scheduledCall: InsertScheduledCall): Promise<ScheduledCall>;
+  updateScheduledCall(id: number, data: UpdateScheduledCall): Promise<ScheduledCall | undefined>;
+  deleteScheduledCall(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -128,6 +137,11 @@ export class DatabaseStorage implements IStorage {
           bio: initiator.bio,
           profilePicture: initiator.profilePicture,
           nativeLanguage: initiator.nativeLanguage,
+          twitterUrl: initiator.twitterUrl,
+          facebookUrl: initiator.facebookUrl,
+          instagramUrl: initiator.instagramUrl,
+          linkedinUrl: initiator.linkedinUrl,
+          githubUrl: initiator.githubUrl,
           createdAt: initiator.createdAt.toISOString()
         } : undefined,
         receiver: receiver ? {
@@ -138,6 +152,11 @@ export class DatabaseStorage implements IStorage {
           bio: receiver.bio,
           profilePicture: receiver.profilePicture,
           nativeLanguage: receiver.nativeLanguage,
+          twitterUrl: receiver.twitterUrl,
+          facebookUrl: receiver.facebookUrl,
+          instagramUrl: receiver.instagramUrl,
+          linkedinUrl: receiver.linkedinUrl,
+          githubUrl: receiver.githubUrl,
           createdAt: receiver.createdAt.toISOString()
         } : undefined
       };
@@ -161,6 +180,145 @@ export class DatabaseStorage implements IStorage {
       .where(eq(calls.id, id))
       .returning();
     return updatedCall;
+  }
+
+  // Scheduled call operations
+  async getScheduledCalls(userId: number): Promise<ScheduledCallResponse[]> {
+    const userScheduledCalls = await db
+      .select()
+      .from(scheduledCalls)
+      .where(or(eq(scheduledCalls.initiatorId, userId), eq(scheduledCalls.receiverId, userId)))
+      .orderBy(desc(scheduledCalls.scheduledTime));
+
+    return Promise.all(userScheduledCalls.map(async (scheduledCall) => {
+      const [initiator] = await db.select().from(users).where(eq(users.id, scheduledCall.initiatorId));
+      const [receiver] = await db.select().from(users).where(eq(users.id, scheduledCall.receiverId));
+
+      return {
+        ...scheduledCall,
+        scheduledTime: scheduledCall.scheduledTime.toISOString(),
+        createdAt: scheduledCall.createdAt.toISOString(),
+        initiator: initiator ? {
+          id: initiator.id,
+          username: initiator.username,
+          displayName: initiator.displayName,
+          email: initiator.email,
+          bio: initiator.bio,
+          profilePicture: initiator.profilePicture,
+          nativeLanguage: initiator.nativeLanguage,
+          twitterUrl: initiator.twitterUrl,
+          facebookUrl: initiator.facebookUrl,
+          instagramUrl: initiator.instagramUrl,
+          linkedinUrl: initiator.linkedinUrl,
+          githubUrl: initiator.githubUrl,
+          createdAt: initiator.createdAt.toISOString()
+        } : undefined,
+        receiver: receiver ? {
+          id: receiver.id,
+          username: receiver.username,
+          displayName: receiver.displayName,
+          email: receiver.email,
+          bio: receiver.bio,
+          profilePicture: receiver.profilePicture,
+          nativeLanguage: receiver.nativeLanguage,
+          twitterUrl: receiver.twitterUrl,
+          facebookUrl: receiver.facebookUrl,
+          instagramUrl: receiver.instagramUrl,
+          linkedinUrl: receiver.linkedinUrl,
+          githubUrl: receiver.githubUrl,
+          createdAt: receiver.createdAt.toISOString()
+        } : undefined
+      };
+    }));
+  }
+
+  async getScheduledCallById(id: number): Promise<ScheduledCall | undefined> {
+    const [scheduledCall] = await db.select().from(scheduledCalls).where(eq(scheduledCalls.id, id));
+    return scheduledCall;
+  }
+
+  async getScheduledCallsByDate(userId: number, date: Date): Promise<ScheduledCallResponse[]> {
+    // Create start and end date for the provided date (entire day)
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    
+    const userScheduledCalls = await db
+      .select()
+      .from(scheduledCalls)
+      .where(
+        and(
+          or(eq(scheduledCalls.initiatorId, userId), eq(scheduledCalls.receiverId, userId)),
+          gte(scheduledCalls.scheduledTime, startDate),
+          lte(scheduledCalls.scheduledTime, endDate)
+        )
+      )
+      .orderBy(scheduledCalls.scheduledTime);
+
+    return Promise.all(userScheduledCalls.map(async (scheduledCall) => {
+      const [initiator] = await db.select().from(users).where(eq(users.id, scheduledCall.initiatorId));
+      const [receiver] = await db.select().from(users).where(eq(users.id, scheduledCall.receiverId));
+
+      return {
+        ...scheduledCall,
+        scheduledTime: scheduledCall.scheduledTime.toISOString(),
+        createdAt: scheduledCall.createdAt.toISOString(),
+        initiator: initiator ? {
+          id: initiator.id,
+          username: initiator.username,
+          displayName: initiator.displayName,
+          email: initiator.email,
+          bio: initiator.bio,
+          profilePicture: initiator.profilePicture,
+          nativeLanguage: initiator.nativeLanguage,
+          twitterUrl: initiator.twitterUrl,
+          facebookUrl: initiator.facebookUrl,
+          instagramUrl: initiator.instagramUrl,
+          linkedinUrl: initiator.linkedinUrl,
+          githubUrl: initiator.githubUrl,
+          createdAt: initiator.createdAt.toISOString()
+        } : undefined,
+        receiver: receiver ? {
+          id: receiver.id,
+          username: receiver.username,
+          displayName: receiver.displayName,
+          email: receiver.email,
+          bio: receiver.bio,
+          profilePicture: receiver.profilePicture,
+          nativeLanguage: receiver.nativeLanguage,
+          twitterUrl: receiver.twitterUrl,
+          facebookUrl: receiver.facebookUrl,
+          instagramUrl: receiver.instagramUrl,
+          linkedinUrl: receiver.linkedinUrl,
+          githubUrl: receiver.githubUrl,
+          createdAt: receiver.createdAt.toISOString()
+        } : undefined
+      };
+    }));
+  }
+
+  async createScheduledCall(insertScheduledCall: InsertScheduledCall): Promise<ScheduledCall> {
+    const [scheduledCall] = await db
+      .insert(scheduledCalls)
+      .values(insertScheduledCall)
+      .returning();
+    return scheduledCall;
+  }
+
+  async updateScheduledCall(id: number, data: UpdateScheduledCall): Promise<ScheduledCall | undefined> {
+    const [updatedScheduledCall] = await db
+      .update(scheduledCalls)
+      .set(data)
+      .where(eq(scheduledCalls.id, id))
+      .returning();
+    return updatedScheduledCall;
+  }
+
+  async deleteScheduledCall(id: number): Promise<boolean> {
+    const result = await db.delete(scheduledCalls).where(eq(scheduledCalls.id, id));
+    return !!result;
   }
 }
 

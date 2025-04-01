@@ -13,6 +13,11 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profilePicture: text("profile_picture"),
   nativeLanguage: text("native_language").notNull(),
+  twitterUrl: text("twitter_url"),
+  facebookUrl: text("facebook_url"),
+  instagramUrl: text("instagram_url"),
+  linkedinUrl: text("linkedin_url"),
+  githubUrl: text("github_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -36,6 +41,20 @@ export const calls = pgTable("calls", {
   duration: integer("duration"),
 });
 
+// Scheduled calls
+export const scheduledCalls = pgTable("scheduled_calls", {
+  id: serial("id").primaryKey(),
+  initiatorId: integer("initiator_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  scheduledTime: timestamp("scheduled_time").notNull(),
+  duration: integer("duration").notNull(), // in minutes
+  notes: text("notes"),
+  initiatorLanguage: text("initiator_language").notNull(),
+  receiverLanguage: text("receiver_language").notNull(),
+  status: text("status").notNull().default("pending"), // pending, confirmed, cancelled, completed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Define insert schemas using drizzle-zod
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -50,9 +69,16 @@ export const insertCallSchema = createInsertSchema(calls).omit({
   id: true,
 });
 
+export const insertScheduledCallSchema = createInsertSchema(scheduledCalls).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
 // Define update schemas for partial updates
 export const updateUserSchema = insertUserSchema.partial();
 export const updateUserLanguageSchema = insertUserLanguageSchema.partial();
+export const updateScheduledCallSchema = insertScheduledCallSchema.partial();
 
 // Define response schemas
 export const userResponseSchema = z.object({
@@ -63,6 +89,11 @@ export const userResponseSchema = z.object({
   bio: z.string().nullable(),
   profilePicture: z.string().nullable(),
   nativeLanguage: z.string(),
+  twitterUrl: z.string().nullable(),
+  facebookUrl: z.string().nullable(),
+  instagramUrl: z.string().nullable(),
+  linkedinUrl: z.string().nullable(),
+  githubUrl: z.string().nullable(),
   createdAt: z.string(),
   languages: z.array(z.object({
     id: z.number(),
@@ -84,6 +115,21 @@ export const callResponseSchema = z.object({
   receiver: userResponseSchema.omit({ languages: true }).optional(),
 });
 
+export const scheduledCallResponseSchema = z.object({
+  id: z.number(),
+  initiatorId: z.number(),
+  receiverId: z.number(),
+  scheduledTime: z.string(),
+  duration: z.number(),
+  notes: z.string().nullable(),
+  initiatorLanguage: z.string(),
+  receiverLanguage: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+  initiator: userResponseSchema.omit({ languages: true }).optional(),
+  receiver: userResponseSchema.omit({ languages: true }).optional(),
+});
+
 // Define types using the schemas
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
@@ -97,6 +143,11 @@ export type UserLanguage = typeof userLanguages.$inferSelect;
 export type InsertCall = z.infer<typeof insertCallSchema>;
 export type Call = typeof calls.$inferSelect;
 export type CallResponse = z.infer<typeof callResponseSchema>;
+
+export type InsertScheduledCall = z.infer<typeof insertScheduledCallSchema>;
+export type UpdateScheduledCall = z.infer<typeof updateScheduledCallSchema>;
+export type ScheduledCall = typeof scheduledCalls.$inferSelect;
+export type ScheduledCallResponse = z.infer<typeof scheduledCallResponseSchema>;
 
 // Language options
 export const LANGUAGE_OPTIONS = [
@@ -127,6 +178,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   languages: many(userLanguages),
   initiatedCalls: many(calls, { relationName: "initiator" }),
   receivedCalls: many(calls, { relationName: "receiver" }),
+  initiatedScheduledCalls: many(scheduledCalls, { relationName: "scheduled_initiator" }),
+  receivedScheduledCalls: many(scheduledCalls, { relationName: "scheduled_receiver" }),
 }));
 
 export const userLanguagesRelations = relations(userLanguages, ({ one }) => ({
@@ -146,5 +199,18 @@ export const callsRelations = relations(calls, ({ one }) => ({
     fields: [calls.receiverId],
     references: [users.id],
     relationName: "receiver",
+  }),
+}));
+
+export const scheduledCallsRelations = relations(scheduledCalls, ({ one }) => ({
+  initiator: one(users, {
+    fields: [scheduledCalls.initiatorId],
+    references: [users.id],
+    relationName: "scheduled_initiator",
+  }),
+  receiver: one(users, {
+    fields: [scheduledCalls.receiverId],
+    references: [users.id],
+    relationName: "scheduled_receiver",
   }),
 }));

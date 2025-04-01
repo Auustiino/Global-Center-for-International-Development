@@ -17,7 +17,7 @@ const Home = () => {
   const [supportedLanguages] = useState(LANGUAGE_OPTIONS);
 
   // Fetch recent calls if user is authenticated
-  const { data: recentCalls, isLoading: isLoadingCalls } = useQuery({
+  const { data: recentCalls = [], isLoading: isLoadingCalls } = useQuery<CallResponse[]>({
     queryKey: [user ? `/api/users/${user.id}/calls` : null],
     enabled: !!user,
   });
@@ -107,7 +107,7 @@ const Home = () => {
             
             {isLoadingCalls ? (
               <div className="text-center py-4 text-slate-500">Loading recent calls...</div>
-            ) : recentCalls?.length ? (
+            ) : (recentCalls && recentCalls.length > 0) ? (
               recentCalls.map((call: CallResponse) => {
                 const partner = getCallPartner(call);
                 if (!partner) return null;

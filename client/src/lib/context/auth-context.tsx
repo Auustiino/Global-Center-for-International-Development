@@ -116,12 +116,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mockUser = {
       id: 999,
       username: "developer",
+      password: "password123", // Not used in frontend, but required in the type
       email: "dev@example.com",
       displayName: "Developer Mode",
       bio: "This is a developer account for testing",
       profilePicture: null,
       nativeLanguage: "en",
-      createdAt: new Date().toISOString(),
+      twitterUrl: null,
+      facebookUrl: null,
+      instagramUrl: null,
+      linkedinUrl: null,
+      githubUrl: null,
+      createdAt: new Date(),
     };
     
     setUser(mockUser);

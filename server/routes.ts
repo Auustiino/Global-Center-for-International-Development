@@ -13,7 +13,8 @@ import { storage } from "./storage";
 import { 
   insertUserSchema, updateUserSchema, 
   insertUserLanguageSchema, updateUserLanguageSchema,
-  insertCallSchema, LANGUAGE_OPTIONS
+  insertCallSchema, insertScheduledCallSchema, updateScheduledCallSchema,
+  LANGUAGE_OPTIONS
 } from "@shared/schema";
 import { ZodError } from "zod";
 import * as ws from "ws";
@@ -578,6 +579,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Agora token error:", error);
       return res.status(500).json({ message: "Failed to generate token" });
+    }
+  });
+
+  // Scheduled Calls Routes
+  // Get all scheduled calls for a user
+  app.get("/api/users/:userId/scheduled-calls", authenticate, async (req, res) => {
+    try {
+      const userId = Number(req.params.userId);
+      
+      // Check if user is viewing their own scheduled calls
+      if ((req as any).user.id !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const scheduledCalls = await storage.getScheduledCalls(userId);
+      return res.json(scheduledCalls);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  });
+
+  // Get scheduled calls for a specific date
+  app.get("/api/users/:userId/scheduled-calls/date/:date", authenticate, async (req, res) => {
+    try {
+      const userId = Number(req.params.userId);
+      const dateStr = req.params.date; // Format: YYYY-MM-DD
+      
+      // Check if user is viewing their own scheduled calls
+      if ((req as any).user.id !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Parse the date
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ message: "Invalid date format. Use YYYY-MM-DD" });
+      }
+      
+      const scheduledCalls = await storage.getScheduledCallsByDate(userId, date);
+      return res.json(scheduledCalls);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  });
+
+  // Create a new scheduled call
+  app.post("/api/scheduled-calls", authenticate, async (req, res) => {
+    try {
+      const scheduledCallData = insertScheduledCallSchema.parse(req.body);
+      
+      // Check if initiator is the authenticated user
+      if ((req as any).user.id !== scheduledCallData.initiatorId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      // Check if receiver exists
+      const receiver = await storage.getUser(scheduledCallData.receiverId);
+      if (!receiver) {
+        return res.status(404).json({ message: "Receiver not found" });
+      }
+      
+      const scheduledCall = await storage.createScheduledCall(scheduledCallData);
+      return res.status(201).json(scheduledCall);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  });
+
+  // Get a specific scheduled call
+  app.get("/api/scheduled-calls/:id", authenticate, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const scheduledCall = await storage.getScheduledCallById(id);
+      
+      if (!scheduledCall) {
+        return res.status(404).json({ message: "Scheduled call not found" });
+      }
+      
+      // Check if user is part of the scheduled call
+      const userId = (req as any).user.id;
+      if (scheduledCall.initiatorId !== userId && scheduledCall.receiverId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      return res.json(scheduledCall);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  });
+
+  // Update a scheduled call
+  app.patch("/api/scheduled-calls/:id", authenticate, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const scheduledCall = await storage.getScheduledCallById(id);
+      
+      if (!scheduledCall) {
+        return res.status(404).json({ message: "Scheduled call not found" });
+      }
+      
+      // Check if user is the initiator (only initiator can update)
+      const userId = (req as any).user.id;
+      if (scheduledCall.initiatorId !== userId) {
+        return res.status(403).json({ message: "Only the initiator can update a scheduled call" });
+      }
+      
+      const validatedData = updateScheduledCallSchema.parse(req.body);
+      const updatedScheduledCall = await storage.updateScheduledCall(id, validatedData);
+      
+      return res.json(updatedScheduledCall);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  });
+
+  // Delete a scheduled call
+  app.delete("/api/scheduled-calls/:id", authenticate, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const scheduledCall = await storage.getScheduledCallById(id);
+      
+      if (!scheduledCall) {
+        return res.status(404).json({ message: "Scheduled call not found" });
+      }
+      
+      // Check if user is the initiator (only initiator can delete)
+      const userId = (req as any).user.id;
+      if (scheduledCall.initiatorId !== userId) {
+        return res.status(403).json({ message: "Only the initiator can delete a scheduled call" });
+      }
+      
+      await storage.deleteScheduledCall(id);
+      return res.status(204).send();
+    } catch (error) {
+      return handleError(error, res);
     }
   });
 
