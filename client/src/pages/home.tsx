@@ -22,18 +22,7 @@ const Home = () => {
     enabled: !!user,
   });
 
-  // Redirect to sign up page if not authenticated after a delay
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (!isAuthenticated) {
-      timeoutId = setTimeout(() => {
-        setLocation("/signup");
-      }, 1500);
-    }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isAuthenticated, setLocation]);
+  // Removed redirection to signup - developer mode will now work correctly
 
   // Navigate to video call with a specific user
   const handleStartCall = (userId?: number) => {

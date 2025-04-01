@@ -11,16 +11,16 @@ import { useAuth } from "./lib/context/auth-context";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isDevMode } = useAuth();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isDevMode) {
       setLocation("/signup");
     }
-  }, [isAuthenticated, setLocation]);
+  }, [isAuthenticated, isDevMode, setLocation]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDevMode) {
     return null;
   }
 
