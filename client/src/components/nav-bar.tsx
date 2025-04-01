@@ -53,6 +53,7 @@ const NavBar = () => {
     { name: "Calls", path: "/calls" },
     { name: "History", path: "/history" },
     { name: "Settings", path: "/settings" },
+    { name: "Developer Mode", onClick: enableDevMode, showDot: isDevMode },
   ];
 
   return (
@@ -68,17 +69,30 @@ const NavBar = () => {
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
                 {navItems.map((item) => (
-                  <Link key={item.path} href={item.path}>
-                    <span
-                      className={`${
-                        location === item.path
-                          ? "bg-slate-800"
-                          : "text-gray-300 hover:bg-slate-800 hover:text-white"
-                      } px-3 py-2 rounded-md text-sm font-medium cursor-pointer`}
+                  item.path ? (
+                    <Link key={item.path} href={item.path}>
+                      <span
+                        className={`${
+                          location === item.path
+                            ? "bg-slate-800"
+                            : "text-gray-300 hover:bg-slate-800 hover:text-white"
+                        } px-3 py-2 rounded-md text-sm font-medium cursor-pointer`}
+                      >
+                        {item.name}
+                      </span>
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.name}
+                      onClick={item.onClick}
+                      className="text-gray-300 hover:bg-slate-800 hover:text-white px-3 py-2 rounded-md text-sm font-medium cursor-pointer flex items-center"
                     >
                       {item.name}
-                    </span>
-                  </Link>
+                      {item.showDot && (
+                        <span className="ml-2 h-2 w-2 rounded-full bg-green-500"></span>
+                      )}
+                    </button>
+                  )
                 ))}
               </div>
             </div>
