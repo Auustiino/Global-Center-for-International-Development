@@ -14,7 +14,17 @@ interface AuthContextData {
   isDevMode: boolean;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+// Create the initial context with defaults
+const AuthContext = createContext<AuthContextData>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  login: async () => {},
+  register: async () => {},
+  logout: () => {},
+  enableDevMode: () => {},
+  isDevMode: false,
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
