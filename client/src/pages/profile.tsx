@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/context/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import NavBar from "@/components/nav-bar";
 import ProfileForm from "@/components/profile/profile-form";
 import UserProfile from "@/components/profile/user-profile";
 import { apiRequest } from "@/lib/queryClient";
@@ -51,7 +50,6 @@ const Profile = ({ params, edit }: ProfileProps) => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <NavBar />
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         {showEditForm ? (
           <ProfileForm />

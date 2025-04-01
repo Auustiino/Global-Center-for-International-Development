@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/context/auth-context";
 import { getUserCalls } from "@/lib/api-services";
 import { CallResponse, LANGUAGE_OPTIONS } from "@shared/schema";
-import NavBar from "@/components/nav-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,8 +50,6 @@ const Home = () => {
 
   return (
     <div className="bg-slate-50 font-sans min-h-screen">
-      <NavBar />
-
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-primary mb-4">Break Language Barriers</h1>
