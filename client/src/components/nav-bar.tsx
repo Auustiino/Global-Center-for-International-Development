@@ -121,7 +121,13 @@ const NavBar = () => {
                       <span>Profile</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={enableDevMode} className="relative">
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        await login("developer", "password123");
+                        enableDevMode();
+                      }} 
+                      className="relative"
+                    >
                       <Code className="mr-2 h-4 w-4" />
                       <span>Developer Mode</span>
                       {isDevMode && (
