@@ -1,7 +1,9 @@
-en
 #!/usr/bin/env node
 
-import { storage } from "./server/storage";
+// Load environment variables from .env file
+import 'dotenv/config';
+
+import { storage } from "./server/storage.ts";
 
 async function setupDevAccount() {
   try {
